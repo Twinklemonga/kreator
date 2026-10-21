@@ -21,7 +21,7 @@ export default function Landing({ onLogin, onSignup }) {
       </nav>
 
       <header className="hero">
-        <div className="hero-badge">✨ Built for nano &amp; micro creators in India</div>
+        <div className="hero-badge">✨ Your personal Social Media Manager✨</div>
         <h1>Your creator business,<br /><span className="grad-text">in one vibrant place.</span></h1>
         <p className="hero-sub">
           Kreator replaces an expensive social media manager. Brand deals, pricing,
