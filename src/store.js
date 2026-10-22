@@ -1,49 +1,86 @@
 import { useEffect, useState } from 'react'
+import { supabase } from './supabaseClient.js'
 
-// ---------- Demo auth (accounts live in this browser only) ----------
-// Real cloud accounts + sync arrive with the payments stage.
-export function getUsers() {
-  try { return JSON.parse(localStorage.getItem('kr_users')) || {} } catch { return {} }
-}
-function saveUsers(u) { localStorage.setItem('kr_users', JSON.stringify(u)) }
+// ---------- Real auth (Supabase): accounts live in the cloud ----------
+// One account works on every device. Email + password and Google sign-in.
 
-export function currentUser() {
-  try { return JSON.parse(localStorage.getItem('kr_session')) } catch { return null }
-}
+let activeUser = null
+export function setActiveUser(u) { activeUser = u }
+export function currentUser() { return activeUser }
 
-export function signUp(name, email, password) {
-  const users = getUsers()
-  if (users[email]) return { error: 'This email already has an account. Log in instead.' }
-  users[email] = { name, email, password }
-  saveUsers(users)
-  localStorage.setItem('kr_session', JSON.stringify(users[email]))
-  seedDemoData(email)
-  return { user: users[email] }
+function shapeUser(u) {
+  if (!u) return null
+  const name =
+    u.user_metadata?.name ||
+    u.user_metadata?.full_name ||
+    (u.email ? u.email.split('@')[0] : 'Creator')
+  return { id: u.id, name, email: u.email }
 }
 
-export function logIn(email, password) {
-  const u = getUsers()[email]
-  if (!u) return { error: 'No account with this email. Sign up first.' }
-  if (u.password !== password) return { error: 'Wrong password. Try again.' }
-  localStorage.setItem('kr_session', JSON.stringify(u))
-  return { user: u }
+function friendlyError(msg = '') {
+  if (msg.includes('Invalid login credentials')) return 'Wrong email or password. Try again.'
+  if (msg.includes('User already registered')) return 'This email already has an account. Log in instead.'
+  if (msg.includes('Password should be')) return 'Password needs at least 6 characters.'
+  if (msg.includes('Unable to validate email')) return "That email address doesn't look right."
+  if (msg.includes('Email rate limit')) return 'Too many attempts. Wait a minute and try again.'
+  return msg
 }
 
-export function googleSignIn() {
-  const email = 'demo.creator@gmail.com'
-  const users = getUsers()
-  if (!users[email]) {
-    users[email] = { name: 'Demo Creator', email, google: true }
-    saveUsers(users)
-    seedDemoData(email)
+const NOT_SETUP = 'Login is not connected yet. Add the Supabase keys to .env / Vercel and redeploy.'
+
+// Read the saved session once when the app opens (keeps you logged in).
+export async function getInitialUser() {
+  if (!supabase) return null
+  const { data } = await supabase.auth.getSession()
+  return shapeUser(data?.session?.user)
+}
+
+// Fires on log in, log out, and when Google sign-in returns to the app.
+export function onUserChange(cb) {
+  if (!supabase) return () => {}
+  const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    cb(shapeUser(session?.user))
+  })
+  return () => subscription.unsubscribe()
+}
+
+export async function signUp(name, email, password) {
+  if (!supabase) return { error: NOT_SETUP }
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: { data: { name: name || 'Creator' } },
+  })
+  if (error) return { error: friendlyError(error.message) }
+  if (!data.session) {
+    // Supabase "Confirm email" is ON: no session until the email link is clicked.
+    return { info: 'Account created! Open the confirmation email, click the link, then log in.' }
   }
-  localStorage.setItem('kr_session', JSON.stringify(users[email]))
-  return { user: users[email] }
+  return { user: shapeUser(data.user) }
 }
 
-export function logOut() { localStorage.removeItem('kr_session') }
+export async function logIn(email, password) {
+  if (!supabase) return { error: NOT_SETUP }
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+  if (error) return { error: friendlyError(error.message) }
+  return { user: shapeUser(data.user) }
+}
 
-// ---------- Per-user data storage ----------
+export async function googleSignIn() {
+  if (!supabase) return { error: NOT_SETUP }
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.origin },
+  })
+  if (error) return { error: friendlyError(error.message) }
+  return {} // browser is now redirecting to Google
+}
+
+export async function logOut() {
+  if (supabase) await supabase.auth.signOut()
+}
+
+// ---------- Per-user data storage (still in the browser, keyed by account) ----------
 export function useStore(key, initial) {
   const u = currentUser()
   const full = u ? `kr_${u.email}_${key}` : `kr_guest_${key}`
@@ -55,7 +92,7 @@ export function useStore(key, initial) {
 }
 
 // ---------- Demo seed data so charts and boards look alive on day 1 ----------
-function seedDemoData(email) {
+export function seedDemoData(email) {
   const p = `kr_${email}_`
   if (localStorage.getItem(p + 'deals')) return
   const m = new Date().getMonth()

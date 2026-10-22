@@ -1,83 +1,111 @@
-# Kreator: 2-hour launch guide (VS Code)
+# Kreator V4 — real login setup guide (Supabase)
 
-Product: Kreator, a creator CRM that replaces the social media manager for nano/micro creators (10k-100k followers, India). Plan: Rs 60/month via Razorpay.
-The starter project is already built and tested (it builds cleanly). You don't write code. You copy, push, deploy.
+You do NOT need to understand the code. Follow the stages one by one.
+V4 replaces the demo login with real accounts: email + password, and "Continue with Google".
+One account will work on every device.
 
-## DO THESE 3 NOW (10 min)
-1. Unzip kreator-starter.zip. In VS Code: File > Open Folder > pick the "kreator" folder.
-2. Create a GitHub account at github.com/signup (skip if you have one).
-3. Open godaddy.com/en-in and search domains (list below). Don't pay yet.
+## Stage 1 — put the new code into your project (same as last time)
 
-## Timeline
-| Time | Step |
-|---|---|
-| 0:00-0:10 | The 3 actions above |
-| 0:10-0:30 | Push code to GitHub |
-| 0:30-0:55 | Deploy on Vercel |
-| 0:55-1:20 | Buy domain, connect to Vercel |
-| 1:20-1:40 | Razorpay payment link, plug into app |
-| 1:40-2:00 | Test, screenshots, submit repo link |
-Do GitHub + Vercel first. If time runs out, you can still submit the repo + Vercel link.
+1. Download `kreator-v4.zip` from the Drive link, double-click to unzip. You get a folder called `kreator`.
+2. Open Finder → go to your OLD kreator folder (the one connected to GitHub).
+3. Click inside it, press Cmd + A, then Cmd + Delete. Empty trash. (Hidden files like `.git` stay safe — that keeps the GitHub connection.)
+4. Open the NEW unzipped `kreator` folder, Cmd + A, Cmd + C.
+5. Back in the OLD folder, Cmd + V.
+6. Open VS Code → File → Open Folder → the old kreator folder.
+7. VS Code top menu → Terminal → New Terminal. Paste, Enter:
 
-## Step 1: GitHub (VS Code)
-1. In VS Code, click the Source Control icon (left bar, branch symbol).
-2. Click "Initialize Repository". Type a message like "Kreator first version" and click Commit (say Yes if it asks to stage all).
-3. Click "Publish Branch". Sign in to GitHub when the browser opens. Choose "Publish to GitHub public repository", name it `kreator`.
-4. Open github.com/YOUR-USERNAME/kreator. Your files should be there. This URL is the repo link you submit.
-If Git is not installed: install from git-scm.com, restart VS Code.
-Terminal alternative (Terminal > New Terminal): create an empty repo on github.com (New repository, no README), then run the 3 command blocks GitHub shows under "push an existing repository from the command line". Before that, run:
 ```
-git init
-git add .
-git commit -m "Kreator first version"
+npm install
 ```
 
-## Step 2: Vercel
-1. vercel.com/signup > Continue with GitHub.
-2. Add New > Project > Import the `kreator` repo.
-3. Framework Preset should show Vite. Leave settings. Click Deploy.
-4. In about a minute you get a link like kreator-xyz.vercel.app. Open it and check it works.
-Every future push to GitHub redeploys automatically.
+(This adds the Supabase library. Wait for "added N packages".)
 
-## Step 3: Domain (GoDaddy)
-Availability (public registry lookup, read-only, Oct 17):
-- Taken: kreator.in, kreator.app, kreator.club, kreator.store, kreator.studio
-- Looked free: kreatorhq.in, trykreator.in, mykreator.in, kreatorapp.in, kreatorcrm.in, getkreator.co.in, kreatorcrm.com
-Confirm on GoDaddy before paying; it shows the live price. GoDaddy India advertises first-year domains from about Rs 96. .in prices vary, so check the first-year and renewal price at checkout. Skip add-ons.
-Suggestion: kreatorhq.in.
+## Stage 2 — create the Supabase project (skip ahead if already done)
 
-Connect to Vercel:
-1. Vercel > your project > Settings > Domains > Add > type your domain.
-2. Vercel shows DNS records (usually an A record 76.76.21.21 for the root and a CNAME for www; use exactly what Vercel shows).
-3. GoDaddy > My Products > your domain > DNS > add/edit those records. Delete any old "parked" A record for @.
-4. Wait until Vercel shows "Valid Configuration" (5-30 min, sometimes longer). Submit the vercel.app link too in case DNS is slow.
+1. Go to https://supabase.com → Sign in (use your GitHub or Google account) → New project.
+2. Name: `kreator`. Database password: click Generate, then COPY it into Notes somewhere safe (you won't need it today).
+3. Region: Mumbai (or Singapore). Create project. Wait ~2 minutes while it spins up.
 
-## Step 4: Razorpay Rs 60/month
-Fastest route (no backend):
-1. razorpay.com > Sign up. Test Mode is fine for the assignment (Live needs KYC).
-2. Dashboard > Payment Links (or Subscriptions > Plans, then Subscription Links) > Create. Amount Rs 60, monthly.
-3. Copy the link.
-4. Vercel > Project > Settings > Environment Variables > add VITE_RAZORPAY_LINK = your link > Save > Deployments > Redeploy.
-The "Subscribe with Razorpay" button then opens it. Say honestly in the submission that payment uses a Razorpay link.
+## Stage 3 — copy your two keys into a local .env file
 
-## MVP features in the app
-1. Landing page with price (Rs 60/month) and Subscribe button
-2. Brand deal pipeline (Pitched, Negotiating, Confirmed, Delivered, Paid) with earnings total
-3. Pricing helper: quote range from followers, engagement, deliverable, plus a counter-offer script
-4. Content calendar for planned posts
-5. Message templates (brand pitch, rate negotiation, payment reminder, PR/gifting reply) with one-click copy
-Data is saved in the browser (no login or database). Pitch it as "v1 is local-first; accounts and database come next."
+1. In Supabase: left sidebar bottom → gear icon (Project Settings) → **API**.
+2. You need exactly two values from this page:
+   - **Project URL** (looks like https://abcdefgh.supabase.co)
+   - the **anon** / **public** key (long text starting with `eyJ...`)
+   ⚠️ Use ONLY the "anon public" key. NEVER copy the "service_role" key anywhere.
+3. In VS Code: in the file list, find `.env.example`. Right-click it → Copy, then right-click in the file list → Paste. Rename the copy to `.env` (dot at the start, no extension).
+4. Open your new `.env` and replace the two placeholder lines with your real values, like:
 
-## Roadmap (not built)
-User accounts, payment webhooks, AI editing support, Instagram integration.
+```
+VITE_SUPABASE_URL=https://abcdefgh.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOi...(your long key)
+```
 
-## Pitch lines
-- Problem: creators under 100k can't afford a Rs 15-30k/month social media manager.
-- Solution: Kreator does the manager's job: deals, pricing, planning, messages.
-- Price: Rs 60/month.
+5. Save (Cmd + S). This file stays on your laptop only — `.gitignore` already blocks it from GitHub.
 
-## Optional local run
-Install Node.js LTS from nodejs.org, then in the VS Code terminal: npm install, then npm run dev. Not needed to deploy.
+## Stage 4 — test login on your laptop
 
-## What was tested
-npm install and npm run build succeeded. I did not click through the UI in a browser, and Razorpay, Vercel and GoDaddy need your accounts, so those steps are untested.
+1. In the VS Code terminal, paste:
+
+```
+npm run dev
+```
+
+2. Open http://localhost:5173 → Sign up with your real email + a password (6+ characters).
+3. You should land in the dashboard. Log out, log back in — it remembers you.
+4. If you see "Account created! Open the confirmation email…" instead of the dashboard: Supabase is asking you to confirm your email. Either click the link in the email, or turn the check off: Supabase → Authentication → Sign In / Up → Email → toggle **Confirm email** OFF → Save. (Off is easier for class demos.)
+
+## Stage 5 — tell Supabase your real website addresses
+
+1. Supabase → **Authentication** → **URL Configuration**.
+2. Site URL: set to `https://www.thekreator.in` → Save.
+3. Redirect URLs → Add URL, one at a time (all four):
+
+```
+http://localhost:5173/**
+https://www.thekreator.in/**
+https://thekreator.in/**
+https://kreator-gray.vercel.app/**
+```
+
+4. Save.
+
+## Stage 6 — add the same two keys to Vercel
+
+1. https://vercel.com → your kreator project → **Settings** → **Environment Variables**.
+2. Add `VITE_SUPABASE_URL` = your Project URL (tick Production, Preview, Development) → Save.
+3. Add `VITE_SUPABASE_ANON_KEY` = your anon public key (same three ticks) → Save.
+
+## Stage 7 — publish
+
+1. VS Code → Source Control icon (left bar).
+2. Message: `V4: real login with Supabase (email + Google)`
+3. Commit → Sync Changes.
+4. Wait 1-2 minutes, open www.thekreator.in, hard refresh (Cmd + Shift + R).
+5. Sign up on the live site, log out, log in. ✅ Email login done.
+
+## Stage 8 — turn on real "Continue with Google"
+
+Part A — Google Cloud:
+1. Go to https://console.cloud.google.com (sign in with your Gmail).
+2. Top-left project dropdown → New Project → name `kreator` → Create.
+3. Left menu → APIs & Services → **OAuth consent screen** → External → Create.
+4. App name: `Kreator`. User support email: your email. Scroll down → Developer contact: your email → Save and Continue (skip Scopes, skip Test users) → Back to Dashboard.
+5. Click **Publish app** → Confirm. (So anyone can sign in, not just test users.)
+
+Part B — connect it to Supabase:
+1. In Supabase → Authentication → Sign In / Up → **Google** → toggle ON.
+2. It shows a **Callback URL** like `https://abcdefgh.supabase.co/auth/v1/callback` — copy it.
+3. Back in Google Cloud → APIs & Services → **Credentials** → Create Credentials → **OAuth client ID**.
+4. Application type: **Web application**. Name: `Kreator`.
+5. Authorized redirect URIs → Add URI → paste the Supabase callback URL → Create.
+6. Copy the **Client ID** and **Client Secret** it shows.
+7. Paste both into the Supabase Google provider box → Save.
+
+Part C — test:
+1. Open www.thekreator.in → Continue with Google → pick your Google account → you should land in the dashboard. 🎉
+
+## If something breaks
+- Send Instinct a screenshot of the exact screen/error.
+- "Login is not connected yet" message on the site = env vars missing (Stage 3 or 6).
+- Google button spins forever = redirect URLs missing (Stage 5) or Google OAuth not saved (Stage 8B).
